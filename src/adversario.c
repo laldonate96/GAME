@@ -82,18 +82,21 @@ bool adversario_seleccionar_pokemon(adversario_t *adversario, char **nombre1,
 		case 0:
 			*nombre1 = strdup(pokemon_nombre(pokemon));
 			adversario->pokemones[0] = pokemon;
+			printf("El pokemon elegido del adversario es: %s\n", *nombre1);
 			agregar_ataques(adversario->ataques, pokemon);
 			con_cada_ataque(pokemon, agregar_ataques_totales, adversario);
 			break;
 		case 1:
 			*nombre2 = strdup(pokemon_nombre(pokemon));
 			adversario->pokemones[1] = pokemon;
+			printf("El pokemon elegido del adversario es: %s\n", *nombre2);
 			agregar_ataques(adversario->ataques, pokemon);
 			con_cada_ataque(pokemon, agregar_ataques_totales, adversario);
 			break;
 		case 2:
 			*nombre3 = strdup(pokemon_nombre(pokemon));
 			adversario->pokemones[2] = pokemon;
+			printf("El pokemon elegido del adversario es: %s\n", *nombre3);
 			break;
 		default:
 			break;
@@ -114,14 +117,21 @@ bool adversario_pokemon_seleccionado(adversario_t *adversario, char *nombre1,
 	if (adversario == NULL)
 		return false;
 
-	adversario->pokemones[2] = lista_buscar_elemento(
+	pokemon_t *pokemon = lista_buscar_elemento(
 		adversario->lista_pokemones, (int (*)(void *, void *))comparador, nombre3);
+
+	adversario->pokemones[2] = pokemon;
 
 	if (adversario->pokemones[2] == NULL)
 		return false;
 
-	agregar_ataques(adversario->ataques, adversario->pokemones[2]);
-	con_cada_ataque(adversario->pokemones[2], agregar_ataques_totales, adversario);
+	agregar_ataques(adversario->ataques, pokemon);
+	con_cada_ataque(pokemon, agregar_ataques_totales, adversario);
+
+	nombre3 = strdup(pokemon_nombre(pokemon));
+
+	printf("Los pokemones del adversario son: %s, %s y %s\n", pokemon_nombre(adversario->pokemones[0]), pokemon_nombre(adversario->pokemones[1]),
+	       pokemon_nombre(pokemon));
 
 	return true;
 }
@@ -138,38 +148,38 @@ bool ataque_pokemon(void *elemento, void *aux) {
 
 jugada_t adversario_proxima_jugada(adversario_t *adversario)
 {
-	srand((unsigned int)time(NULL));
-	size_t tamanio = abb_tamanio(adversario->ataques);
-	int pokemon_random = rand() % 3;
-	int ataque_random = rand() % (int)tamanio;
-	
-	pokemon_t *pokemon = adversario->pokemones[pokemon_random];
-	char *ataque = adversario->ataques_totales[ataque_random];
+    srand((unsigned int)time(NULL));
+    size_t tamanio = abb_tamanio(adversario->ataques);
+    int pokemon_random = rand() % 3;
+    int ataque_random = rand() % (int)tamanio;
+    
+    // Ensure ataque_random is within bounds
+    if (ataque_random >= sizeof(adversario->ataques_totales) / sizeof(adversario->ataques_totales[0])) {
+        ataque_random = sizeof(adversario->ataques_totales) / sizeof(adversario->ataques_totales[0]) - 1;
+    }
+    
+    pokemon_t *pokemon = adversario->pokemones[pokemon_random];
+    char *ataque = adversario->ataques_totales[ataque_random];
 
-	while (!ataque_pokemon(ataque, pokemon) && tamanio > 0) {
-		ataque_random = rand() % 9;
-		ataque = adversario->ataques_totales[ataque_random];
-		if (abb_buscar(adversario->ataques, ataque) == NULL) {
-			ataque_random = rand() % 9;
-			ataque = adversario->ataques_totales[ataque_random];
-		}
-	}		
+    while (!ataque_pokemon(ataque, pokemon) || abb_buscar(adversario->ataques, ataque) == NULL) {
+        ataque_random = rand() % (int)tamanio;
+        ataque = adversario->ataques_totales[ataque_random];
+    }		
 
-	jugada_t j;
-	strncpy(j.ataque, ataque, sizeof(j.ataque) - 1);
-	strncpy(j.pokemon, pokemon_nombre(pokemon), sizeof(j.pokemon) - 1);
+    jugada_t j = {"", ""};
+    strcpy(j.pokemon, pokemon_nombre(pokemon));
+	strcpy(j.ataque, ataque);
 
-	j.ataque[sizeof(j.ataque) - 1] = '\0';
-	j.pokemon[sizeof(j.pokemon) - 1] = '\0';
+    abb_quitar(adversario->ataques, ataque);
 
-	abb_quitar(adversario->ataques, ataque);
+    printf("Todo ok\n");
 
-	return j;
+    return j;
 }
 
 void adversario_informar_jugada(adversario_t *a, jugada_t j)
 {
-	printf("El adversario eligió el ataque %s del pokemon %s\n", j.ataque,
+	printf("El jugador eligió el ataque %s del pokemon %s\n", j.ataque,
 	       j.pokemon);
 
 	return;

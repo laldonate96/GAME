@@ -1,6 +1,7 @@
 #include "juego.h"
 #include "ataque.h"
 #include "lista.h"
+#include "abb.h"
 #include "pokemon.h"
 #include "tipo.h"
 #include <math.h>
@@ -11,7 +12,7 @@
 
 typedef struct info_jugador {
 	int puntaje;
-	lista_t *ataques;
+	abb_t *ataques;
 	struct ataque ataques_usados[9];
 } info_jugador_t;
 
@@ -31,7 +32,7 @@ juego_t *juego_crear()
 		return NULL;
 
 	juego->info_jugador1 = calloc(1, sizeof(info_jugador_t));
-	juego->info_jugador1->ataques = lista_crear();
+	juego->info_jugador1->ataques = abb_crear((abb_comparador)strcmp);
 	if (juego->info_jugador1->ataques == NULL) {
 		free(juego->info_jugador1);
 		free(juego);
@@ -39,9 +40,8 @@ juego_t *juego_crear()
 	}
 
 	juego->info_jugador2 = calloc(1, sizeof(info_jugador_t));
-	juego->info_jugador2->ataques = lista_crear();
+	juego->info_jugador2->ataques = abb_crear((abb_comparador)strcmp);
 	if (juego->info_jugador2->ataques == NULL) {
-		free(juego->info_jugador1->ataques);
 		free(juego->info_jugador1);
 		free(juego->info_jugador2);
 		free(juego);
@@ -87,7 +87,7 @@ void insertar_pokemon(pokemon_t *pokemon, void *aux)
 
 void insertar_ataque(const struct ataque *ataque, void *aux)
 {
-	lista_insertar((lista_t *)aux, (void *)ataque);
+	abb_insertar((abb_t *)aux, (void *)ataque);
 }
 
 lista_t *juego_listar_pokemon(juego_t *juego)
@@ -110,6 +110,23 @@ lista_t *juego_listar_pokemon(juego_t *juego)
 			 juego->lista_pokemones);
 
 	return juego->lista_pokemones;
+}
+
+bool ataque_mostrar(void *elemento, void *extra)
+{
+	const struct ataque *ataque = (const struct ataque *)elemento;
+	printf("%s | ", ataque->nombre);
+	return true;
+}
+
+void imprimir_ataques(abb_t *ataques, int numero)
+{
+	printf("------------------------------------------------------------------------------------------------------------------\n");
+	printf("Ataques del jugador %i:\n", numero);
+	abb_con_cada_elemento(ataques, INORDEN,
+				(bool (*)(void *, void *))ataque_mostrar, NULL);
+	printf("\n");
+	printf("------------------------------------------------------------------------------------------------------------------\n");
 }
 
 JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
@@ -146,6 +163,9 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 	if (strcmp(nombre1, nombre2) == 0 || strcmp(nombre1, nombre3) == 0 ||
 	    strcmp(nombre2, nombre3) == 0)
 		return POKEMON_REPETIDO;
+	
+	imprimir_ataques(juego->info_jugador1->ataques, 1);
+	imprimir_ataques(juego->info_jugador2->ataques, 2);
 
 	return TODO_OK;
 }
@@ -207,32 +227,11 @@ int calcular_puntaje(RESULTADO_ATAQUE resultado, unsigned int poder)
 	}
 }
 
-bool verificar_ataque(const struct ataque *ataque, info_jugador_t *info_jugador,
-		      juego_t *juego)
+bool verificar_ataque(const struct ataque *ataque, abb_t *ataques)
 {
-	for (int i = 0; i < juego->turno; i++) {
-		if (strcmp(info_jugador->ataques_usados[i].nombre,
-			   ataque->nombre) == 0)
-			return false;
-	}
-	return true;
-}
-
-bool ataque_mostrar(void *elemento, void *extra)
-{
-	const struct ataque *ataque = (const struct ataque *)elemento;
-	printf("%s | ", ataque->nombre);
-	return true;
-}
-
-void imprimir_ataques(lista_t *ataques, int numero)
-{
-	printf("------------------------------------------------------------------------------------------------------------------\n");
-	printf("Ataques del jugador %i:\n", numero);
-	lista_con_cada_elemento(ataques,
-				(bool (*)(void *, void *))ataque_mostrar, NULL);
-	printf("\n");
-	printf("------------------------------------------------------------------------------------------------------------------\n");
+	if (abb_buscar(ataques, (void *)ataque) != NULL)
+		return true;
+	return false;
 }
 
 void imprimir_resultados(juego_t *juego, info_jugador_t *info_jugador,
@@ -258,6 +257,8 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 	if (juego == NULL)
 		return resultado;
 
+	printf("Aca 1\n");
+
 	pokemon_t *pokemon_jugador1 =
 		pokemon_buscar(juego->info_pokemon, jugada_jugador1.pokemon);
 
@@ -267,6 +268,8 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 	if (pokemon_jugador1 == NULL || pokemon_jugador2 == NULL)
 		return resultado;
 
+	printf("Aca 2\n");
+
 	const struct ataque *ataque_jugador1 =
 		pokemon_buscar_ataque(pokemon_jugador1, jugada_jugador1.ataque);
 
@@ -274,11 +277,11 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 		pokemon_buscar_ataque(pokemon_jugador2, jugada_jugador2.ataque);
 
 	if (ataque_jugador1 == NULL || ataque_jugador2 == NULL ||
-	    verificar_ataque(ataque_jugador1, juego->info_jugador1, juego) ==
-		    false ||
-	    verificar_ataque(ataque_jugador2, juego->info_jugador2, juego) ==
+	    verificar_ataque(ataque_jugador1, juego->info_jugador1->ataques) ==
 		    false)
 		return resultado;
+
+	printf("Aca 3\n");
 
 	resultado.jugador1 = efectividad_ataque(ataque_jugador1->tipo,
 						pokemon_tipo(pokemon_jugador2));
@@ -287,8 +290,10 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 						pokemon_tipo(pokemon_jugador1));
 
 	juego->info_jugador1->ataques_usados[juego->turno] = *ataque_jugador1;
+	abb_quitar(juego->info_jugador1->ataques, (void *)ataque_jugador1);
 
 	juego->info_jugador2->ataques_usados[juego->turno] = *ataque_jugador2;
+	abb_quitar(juego->info_jugador2->ataques, (void *)ataque_jugador2);
 
 	juego->info_jugador1->puntaje +=
 		calcular_puntaje(resultado.jugador1, ataque_jugador1->poder);
@@ -300,6 +305,10 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 
 	imprimir_resultados(juego, juego->info_jugador1, juego->turno, 1);
 	imprimir_resultados(juego, juego->info_jugador2, juego->turno, 2);
+
+	printf("%li\n", abb_tamanio(juego->info_jugador1->ataques));
+
+	printf("Aca 4\n");
 
 	return resultado;
 }
@@ -336,8 +345,8 @@ void juego_destruir(juego_t *juego)
 	if (juego->info_pokemon != NULL)
 		pokemon_destruir_todo(juego->info_pokemon);
 
-	lista_destruir(juego->info_jugador1->ataques);
-	lista_destruir(juego->info_jugador2->ataques);
+	abb_destruir(juego->info_jugador1->ataques);
+	abb_destruir(juego->info_jugador2->ataques);
 
 	free(juego->info_jugador1);
 	free(juego->info_jugador2);

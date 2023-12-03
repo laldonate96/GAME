@@ -122,9 +122,9 @@ bool ataque_mostrar(void *elemento, void *extra)
 void imprimir_ataques(abb_t *ataques, int numero)
 {
 	printf("------------------------------------------------------------------------------------------------------------------\n");
-	printf("Ataques del jugador %i:\n", numero);
+	printf("Ataques disponibles del jugador %i:\n", numero);
 	abb_con_cada_elemento(ataques, INORDEN,
-				(bool (*)(void *, void *))ataque_mostrar, NULL);
+			      (bool (*)(void *, void *))ataque_mostrar, NULL);
 	printf("\n");
 	printf("------------------------------------------------------------------------------------------------------------------\n");
 }
@@ -163,9 +163,6 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 	if (strcmp(nombre1, nombre2) == 0 || strcmp(nombre1, nombre3) == 0 ||
 	    strcmp(nombre2, nombre3) == 0)
 		return POKEMON_REPETIDO;
-	
-	imprimir_ataques(juego->info_jugador1->ataques, 1);
-	imprimir_ataques(juego->info_jugador2->ataques, 2);
 
 	return TODO_OK;
 }
@@ -257,8 +254,6 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 	if (juego == NULL)
 		return resultado;
 
-	printf("Aca 1\n");
-
 	pokemon_t *pokemon_jugador1 =
 		pokemon_buscar(juego->info_pokemon, jugada_jugador1.pokemon);
 
@@ -267,8 +262,6 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 
 	if (pokemon_jugador1 == NULL || pokemon_jugador2 == NULL)
 		return resultado;
-
-	printf("Aca 2\n");
 
 	const struct ataque *ataque_jugador1 =
 		pokemon_buscar_ataque(pokemon_jugador1, jugada_jugador1.ataque);
@@ -280,8 +273,6 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 	    verificar_ataque(ataque_jugador1, juego->info_jugador1->ataques) ==
 		    false)
 		return resultado;
-
-	printf("Aca 3\n");
 
 	resultado.jugador1 = efectividad_ataque(ataque_jugador1->tipo,
 						pokemon_tipo(pokemon_jugador2));
@@ -306,10 +297,6 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 	imprimir_resultados(juego, juego->info_jugador1, juego->turno, 1);
 	imprimir_resultados(juego, juego->info_jugador2, juego->turno, 2);
 
-	printf("%li\n", abb_tamanio(juego->info_jugador1->ataques));
-
-	printf("Aca 4\n");
-
 	return resultado;
 }
 
@@ -329,8 +316,23 @@ bool juego_finalizado(juego_t *juego)
 	if (juego == NULL)
 		return true;
 
-	if (juego->turno == 9)
+	imprimir_ataques(juego->info_jugador1->ataques, 1);
+
+	if (juego->turno == 9) {
+		printf("------------------------------------------------------------------------------------------------------------------\n");
+		printf("Resultado final:\n");
+		if (juego->info_jugador1->puntaje >
+		    juego->info_jugador2->puntaje)
+			printf("El ganador es el jugador 1\n");
+		else if (juego->info_jugador1->puntaje <
+			 juego->info_jugador2->puntaje)
+			printf("El ganador es el jugador 2\n");
+		else
+			printf("Empate\n");
+		printf("------------------------------------------------------------------------------------------------------------------\n");
 		return true;
+	}
+
 	return false;
 }
 
@@ -339,11 +341,9 @@ void juego_destruir(juego_t *juego)
 	if (juego == NULL)
 		return;
 
-	if (juego->lista_pokemones != NULL)
-		lista_destruir(juego->lista_pokemones);
+	lista_destruir(juego->lista_pokemones);
 
-	if (juego->info_pokemon != NULL)
-		pokemon_destruir_todo(juego->info_pokemon);
+	pokemon_destruir_todo(juego->info_pokemon);
 
 	abb_destruir(juego->info_jugador1->ataques);
 	abb_destruir(juego->info_jugador2->ataques);

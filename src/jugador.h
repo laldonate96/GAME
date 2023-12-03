@@ -24,7 +24,7 @@ jugador_t *jugador_crear(lista_t *);
  * que quiere seleccionar.
  *
  * Los primeros 2 pokemon pertenecen al jugador, el tercer pokemon es para el
- * jugador.
+ * adversario.
  *
  * Devuelve true si pudo seleccionar o false en caso de error,
  */

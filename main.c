@@ -23,22 +23,31 @@
  */
 
 #define ARCHIVO_OK_1 "ejemplos/correcto.txt"
+#define ARCHIVO_OK_2 "ejemplos/corto.txt"
+#define MAX_LINEA 255
+
+void limpiar_buffer()
+{
+	int c;
+	while ((c = getchar()) != '\n' && c != EOF) {
+	};
+}
 
 char *pedir_archivo()
 {
-	char *archivo = calloc(1, sizeof(char) * 255);
+	char *archivo = calloc(1, sizeof(char) * MAX_LINEA);
 	printf("------------------------------------------------------------------------------------------------------------------\n");
 	printf("Ingrese el nombre del archivo de pokemones: ");
 	scanf("%254s", archivo);
-	while (strcmp(archivo, ARCHIVO_OK_1) != 0) {
+	while (strcmp(archivo, ARCHIVO_OK_1) != 0 &&
+	       strcmp(archivo, ARCHIVO_OK_2) != 0) {
+		printf("------------------------------------------------------------------------------------------------------------------\n");
 		printf("El archivo ingresado no es válido, por favor ingrese otro: ");
 		scanf("%254s", archivo);
 	}
 	printf("------------------------------------------------------------------------------------------------------------------\n");
 
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF) {
-	};
+	limpiar_buffer();
 
 	return archivo;
 }
@@ -55,6 +64,13 @@ void mostrar_pokemon_disponibles(juego_t *juego)
 	printf("------------------------------------------------------------------------------------------------------------------\n");
 }
 
+void continuar()
+{
+	printf("Presiona Enter para continuar... ");
+	while (getchar() != '\n')
+		;
+}
+
 int main(int argc, char *argv[])
 {
 	juego_t *juego = juego_crear();
@@ -62,8 +78,19 @@ int main(int argc, char *argv[])
 	// Pide al usuario un nombre de archivo de pokemones
 	char *archivo = pedir_archivo();
 
-	// Carga los pokemon
+	while (strcmp(archivo, ARCHIVO_OK_1) != 0 ||
+	       strcmp(archivo, ARCHIVO_OK_2) == 0) {
+		printf("El archivo ingresado no es válido o no tiene suficientes pokemon, por favor ingrese otro: ");
+		scanf("%254s", archivo);
+		printf("------------------------------------------------------------------------------------------------------------------\n");
+
+		limpiar_buffer();
+	}
+
 	juego_cargar_pokemon(juego, archivo);
+
+	// Limpia la consola
+	printf("\033[H\033[J");
 
 	// Crea un jugador que será utilizado como jugador 1
 	jugador_t *jugador = jugador_crear(juego_listar_pokemon(juego));
@@ -82,6 +109,8 @@ int main(int argc, char *argv[])
 	jugador_seleccionar_pokemon(jugador, &eleccionJugador1,
 				    &eleccionJugador2, &eleccionJugador3);
 
+	printf("\033[H\033[J");
+
 	// pedirle al adversario que indique los 3 pokemon que quiere usar
 	char *eleccionAdversario1, *eleccionAdversario2, *eleccionAdversario3;
 	adversario_seleccionar_pokemon(adversario, &eleccionAdversario1,
@@ -90,7 +119,7 @@ int main(int argc, char *argv[])
 
 	// Seleccionar los pokemon de los jugadores
 	juego_seleccionar_pokemon(juego, JUGADOR1, eleccionJugador1,
-				  eleccionJugador2, eleccionAdversario3);
+				  eleccionJugador2, eleccionJugador3);
 	juego_seleccionar_pokemon(juego, JUGADOR2, eleccionAdversario1,
 				  eleccionAdversario2, eleccionAdversario3);
 
@@ -101,13 +130,12 @@ int main(int argc, char *argv[])
 	// asignar el tercer pokemon del jugador
 	jugador_tercer_pokemon(jugador, eleccionAdversario3);
 
-	// informarle al jugador cuales son los pokemon del adversario
-	printf("Los pokemones del jugador son: %s, %s y %s\n", eleccionJugador1,
-	       eleccionJugador2, eleccionAdversario3);
-
-	free(eleccionAdversario3);
-
 	while (!juego_finalizado(juego)) {
+		// informarle al jugador cuales son sus pokemon
+		printf("Los pokemones del jugador son: %s, %s y %s\n",
+		       eleccionJugador1, eleccionJugador2, eleccionAdversario3);
+		printf("------------------------------------------------------------------------------------------------------------------\n");
+
 		resultado_jugada_t resultado_ronda;
 
 		// Pide al jugador que ingrese por consola el pokemon y ataque para la
@@ -125,8 +153,17 @@ int main(int argc, char *argv[])
 		resultado_ronda = juego_jugar_turno(juego, jugada_jugador,
 						    jugada_adversario);
 
-		if (resultado_ronda.jugador1 == ATAQUE_ERROR) {
+		while (resultado_ronda.jugador1 == ATAQUE_ERROR) {
 			printf("El ataque no corresponde al pokemon o ya fue utilizado!\n");
+			printf("------------------------------------------------------------------------------------------------------------------\n");
+
+			jugada_jugador = jugador_pedir_nombre_y_ataque(jugador);
+
+			jugada_adversario =
+				adversario_proxima_jugada(adversario);
+
+			resultado_ronda = juego_jugar_turno(
+				juego, jugada_jugador, jugada_adversario);
 		}
 
 		// Si se pudo jugar el turno, le informo al adversario la jugada realizada
@@ -137,10 +174,24 @@ int main(int argc, char *argv[])
 			printf("El adversario eligió el ataque %s del pokemon %s\n",
 			       jugada_adversario.ataque,
 			       jugada_adversario.pokemon);
+			printf("------------------------------------------------------------------------------------------------------------------\n");
 		}
+
+		// Pide al jugador que presione enter para continuar
+		continuar();
+
+		printf("\033[H\033[J");
 	}
 
+	// Libera toda la memoria utilizada
+	juego_destruir(juego);
 	jugador_destruir(jugador);
 	adversario_destruir(adversario);
-	juego_destruir(juego);
+	free(archivo);
+	free(eleccionJugador1);
+	free(eleccionJugador2);
+	free(eleccionJugador3);
+	free(eleccionAdversario1);
+	free(eleccionAdversario2);
+	free(eleccionAdversario3);
 }

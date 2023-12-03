@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct info_jugador {
 	int puntaje;
@@ -23,6 +24,10 @@ struct juego {
 	info_jugador_t *info_jugador2;
 	int turno;
 };
+
+#define POKEMONES_MINIMOS 6
+#define MULTIPLICADOR_EFECTIVO 3
+#define MULTIPLICADOR_INEFECTIVO 0.5
 
 juego_t *juego_crear()
 {
@@ -73,7 +78,7 @@ JUEGO_ESTADO juego_cargar_pokemon(juego_t *juego, char *archivo)
 
 	int cantidad_pokemon = pokemon_cantidad(juego->info_pokemon);
 
-	if (cantidad_pokemon < 6) {
+	if (cantidad_pokemon < POKEMONES_MINIMOS) {
 		return POKEMON_INSUFICIENTES;
 	}
 
@@ -96,7 +101,7 @@ lista_t *juego_listar_pokemon(juego_t *juego)
 		return NULL;
 	}
 
-	if (pokemon_cantidad(juego->info_pokemon) < 6) {
+	if (pokemon_cantidad(juego->info_pokemon) < POKEMONES_MINIMOS) {
 		pokemon_destruir_todo(juego->info_pokemon);
 		return NULL;
 	}
@@ -147,14 +152,14 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 		con_cada_ataque(pokemon2, insertar_ataque,
 				juego->info_jugador1->ataques);
 		con_cada_ataque(pokemon3, insertar_ataque,
-				juego->info_jugador1->ataques);
-	} else {
+				juego->info_jugador2->ataques);
+	} else if (jugador == JUGADOR2) {
 		con_cada_ataque(pokemon1, insertar_ataque,
 				juego->info_jugador2->ataques);
 		con_cada_ataque(pokemon2, insertar_ataque,
 				juego->info_jugador2->ataques);
 		con_cada_ataque(pokemon3, insertar_ataque,
-				juego->info_jugador2->ataques);
+				juego->info_jugador1->ataques);
 	}
 
 	if (pokemon1 == NULL || pokemon2 == NULL || pokemon3 == NULL)
@@ -170,40 +175,55 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 RESULTADO_ATAQUE efectividad_ataque(enum TIPO tipo_ataque,
 				    enum TIPO tipo_pokemon)
 {
-	if (tipo_ataque == tipo_pokemon || tipo_ataque == NORMAL)
-		return ATAQUE_REGULAR;
 	switch (tipo_ataque) {
 	case FUEGO:
-		if (tipo_pokemon == PLANTA)
+		if (tipo_pokemon == PLANTA) {
 			return ATAQUE_EFECTIVO;
-		else if (tipo_pokemon == AGUA)
+		} else if (tipo_pokemon == AGUA) {
 			return ATAQUE_INEFECTIVO;
+		}
+		return ATAQUE_REGULAR;
+
 	case PLANTA:
-		if (tipo_pokemon == ROCA)
+		if (tipo_pokemon == ROCA) {
 			return ATAQUE_EFECTIVO;
-		else if (tipo_pokemon == FUEGO)
+		} else if (tipo_pokemon == FUEGO) {
 			return ATAQUE_INEFECTIVO;
+		}
+		return ATAQUE_REGULAR;
+
 	case ROCA:
-		if (tipo_pokemon == ELECTRICO)
+		if (tipo_pokemon == ELECTRICO) {
 			return ATAQUE_EFECTIVO;
-		else if (tipo_pokemon == PLANTA)
+		} else if (tipo_pokemon == PLANTA) {
 			return ATAQUE_INEFECTIVO;
+		}
+		return ATAQUE_REGULAR;
+
 	case ELECTRICO:
-		if (tipo_pokemon == AGUA)
+		if (tipo_pokemon == AGUA) {
 			return ATAQUE_EFECTIVO;
-		else if (tipo_pokemon == ROCA)
+		} else if (tipo_pokemon == ROCA) {
 			return ATAQUE_INEFECTIVO;
+		}
+		return ATAQUE_REGULAR;
+
 	case AGUA:
-		if (tipo_pokemon == FUEGO)
+		if (tipo_pokemon == FUEGO) {
 			return ATAQUE_EFECTIVO;
-		else if (tipo_pokemon == ELECTRICO)
+		} else if (tipo_pokemon == ELECTRICO) {
 			return ATAQUE_INEFECTIVO;
+		}
+		return ATAQUE_REGULAR;
+
 	default:
-		return -1;
+		return ATAQUE_REGULAR;
 	}
+
+	return ATAQUE_ERROR;
 }
 
-double round_up(double x)
+double redondear(double x)
 {
 	return (int)x + ((x - (int)x) > 0 ? 1 : 0);
 }
@@ -216,9 +236,9 @@ int calcular_puntaje(RESULTADO_ATAQUE resultado, unsigned int poder)
 	case ATAQUE_REGULAR:
 		return poder_final;
 	case ATAQUE_EFECTIVO:
-		return poder_final * 3;
+		return poder_final * MULTIPLICADOR_EFECTIVO;
 	case ATAQUE_INEFECTIVO:
-		return (int)round_up(poder_final / 2.0);
+		return (int)redondear(poder_final * MULTIPLICADOR_INEFECTIVO);
 	default:
 		return 0;
 	}
@@ -226,17 +246,29 @@ int calcular_puntaje(RESULTADO_ATAQUE resultado, unsigned int poder)
 
 bool verificar_ataque(const struct ataque *ataque, abb_t *ataques)
 {
-	if (abb_buscar(ataques, (void *)ataque) != NULL)
-		return true;
-	return false;
+	return abb_buscar(ataques, (void *)ataque);
 }
 
-void imprimir_resultados(juego_t *juego, info_jugador_t *info_jugador,
-			 int turno, int numero)
+void imprimir_resultados_jugador(juego_t *juego, info_jugador_t *info_jugador,
+				 int turno, int numero)
 {
 	printf("------------------------------------------------------------------------------------------------------------------\n");
 	printf("Puntaje del jugador %i: %i\n", numero, info_jugador->puntaje);
 	printf("Ataques usados por el jugador %i:\n", numero);
+	for (int i = 0; i < turno; i++) {
+		printf("%s | ", info_jugador->ataques_usados[i].nombre);
+	}
+	printf("\n");
+	printf("------------------------------------------------------------------------------------------------------------------\n");
+}
+
+void imprimir_resultados_adversario(juego_t *juego,
+				    info_jugador_t *info_jugador, int turno,
+				    int numero)
+{
+	printf("------------------------------------------------------------------------------------------------------------------\n");
+	printf("Puntaje del adversario: %i\n", info_jugador->puntaje);
+	printf("Ataques usados por el adversario: \n");
 	for (int i = 0; i < turno; i++) {
 		printf("%s | ", info_jugador->ataques_usados[i].nombre);
 	}
@@ -271,8 +303,11 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 
 	if (ataque_jugador1 == NULL || ataque_jugador2 == NULL ||
 	    verificar_ataque(ataque_jugador1, juego->info_jugador1->ataques) ==
-		    false)
+		    false ||
+	    verificar_ataque(ataque_jugador1, juego->info_jugador1->ataques) ==
+		    false) {
 		return resultado;
+	}
 
 	resultado.jugador1 = efectividad_ataque(ataque_jugador1->tipo,
 						pokemon_tipo(pokemon_jugador2));
@@ -294,8 +329,13 @@ resultado_jugada_t juego_jugar_turno(juego_t *juego, jugada_t jugada_jugador1,
 
 	juego->turno++;
 
-	imprimir_resultados(juego, juego->info_jugador1, juego->turno, 1);
-	imprimir_resultados(juego, juego->info_jugador2, juego->turno, 2);
+	printf("\033[H\033[J");
+
+	imprimir_resultados_jugador(juego, juego->info_jugador1, juego->turno,
+				    1);
+
+	imprimir_resultados_adversario(juego, juego->info_jugador2,
+				       juego->turno, 2);
 
 	return resultado;
 }
@@ -316,19 +356,25 @@ bool juego_finalizado(juego_t *juego)
 	if (juego == NULL)
 		return true;
 
-	imprimir_ataques(juego->info_jugador1->ataques, 1);
+	if (juego->turno != 9) {
+		imprimir_ataques(juego->info_jugador1->ataques, 1);
+	}
 
 	if (juego->turno == 9) {
+		printf("------------------------------------------------------------------------------------------------------------------\n");
 		printf("------------------------------------------------------------------------------------------------------------------\n");
 		printf("Resultado final:\n");
 		if (juego->info_jugador1->puntaje >
 		    juego->info_jugador2->puntaje)
-			printf("El ganador es el jugador 1\n");
+			printf("El ganador es el jugador 1, con %i puntos!\n",
+			       juego->info_jugador1->puntaje);
 		else if (juego->info_jugador1->puntaje <
 			 juego->info_jugador2->puntaje)
-			printf("El ganador es el jugador 2\n");
+			printf("El ganador es el adversario, con %i puntos!\n",
+			       juego->info_jugador2->puntaje);
 		else
-			printf("Empate\n");
+			printf("Empate!\n");
+		printf("------------------------------------------------------------------------------------------------------------------\n");
 		printf("------------------------------------------------------------------------------------------------------------------\n");
 		return true;
 	}

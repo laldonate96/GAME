@@ -157,6 +157,9 @@ bool ataque_pokemon(void *elemento, void *aux)
 
 jugada_t adversario_proxima_jugada(adversario_t *adversario)
 {
+	if (adversario == NULL)
+		return (jugada_t){ .ataque = "", .pokemon = "" };
+
 	srand((unsigned int)time(NULL));
 	size_t tamanio = lista_tamanio(adversario->ataques_totales);
 	int pokemon_random = rand() % MAX_POKEMONES;
@@ -188,6 +191,9 @@ jugada_t adversario_proxima_jugada(adversario_t *adversario)
 
 void adversario_informar_jugada(adversario_t *a, jugada_t j)
 {
+	if (a == NULL)
+		return;
+
 	printf("El jugador eligió el ataque %s del pokemon %s\n", j.ataque,
 	       j.pokemon);
 	printf("------------------------------------------------------------------------------------------------------------------\n");

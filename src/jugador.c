@@ -49,6 +49,9 @@ int jugador_comparador(void *nombre1, void *nombre2)
 
 bool jugador_pokemon_existe(jugador_t *jugador, char *pokemon)
 {
+	if (lista_vacia(jugador->lista_pokemones) || jugador == NULL)
+		return false;
+
 	for (int i = 0; i < MAX_POKEMONES; i++) {
 		if (jugador->pokemones[i] == NULL)
 			break;
@@ -61,6 +64,9 @@ bool jugador_pokemon_existe(jugador_t *jugador, char *pokemon)
 bool jugador_seleccionar_pokemon(jugador_t *jugador, char **nombre1,
 				 char **nombre2, char **nombre3)
 {
+	if (lista_vacia(jugador->lista_pokemones) || jugador == NULL)
+		return false;
+
 	for (int i = 0; i < MAX_POKEMONES; i++) {
 		char linea[MAX_NOMBRE];
 		printf("Elija un pokemon para agregar a tu mazo: ");
@@ -101,6 +107,9 @@ void jugador_tercer_pokemon(jugador_t *jugador, char *nombre3)
 
 jugada_t jugador_pedir_nombre_y_ataque(jugador_t *jugador)
 {
+	if (lista_vacia(jugador->lista_pokemones) || jugador == NULL)
+		return (jugada_t){ "", "" };
+
 	char linea[MAX_NOMBRE];
 	char *nombre = malloc(sizeof(char) * MAX_NOMBRE);
 	char *ataque = malloc(sizeof(char) * MAX_NOMBRE);

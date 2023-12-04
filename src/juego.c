@@ -146,6 +146,9 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 	pokemon_t *pokemon2 = pokemon_buscar(juego->info_pokemon, nombre2);
 	pokemon_t *pokemon3 = pokemon_buscar(juego->info_pokemon, nombre3);
 
+	if (pokemon1 == NULL || pokemon2 == NULL || pokemon3 == NULL)
+		return POKEMON_INEXISTENTE;
+
 	if (jugador == JUGADOR1) {
 		con_cada_ataque(pokemon1, insertar_ataque,
 				juego->info_jugador1->ataques);
@@ -161,9 +164,6 @@ JUEGO_ESTADO juego_seleccionar_pokemon(juego_t *juego, JUGADOR jugador,
 		con_cada_ataque(pokemon3, insertar_ataque,
 				juego->info_jugador1->ataques);
 	}
-
-	if (pokemon1 == NULL || pokemon2 == NULL || pokemon3 == NULL)
-		return POKEMON_INEXISTENTE;
 
 	if (strcmp(nombre1, nombre2) == 0 || strcmp(nombre1, nombre3) == 0 ||
 	    strcmp(nombre2, nombre3) == 0)

@@ -3,6 +3,8 @@
 
 #include "lista.h"
 #include "juego.h"
+#include "pokemon.h"
+#include <stdlib.h>
 
 typedef struct adversario adversario_t;
 

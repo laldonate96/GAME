@@ -1,0 +1,93 @@
+gcc -std=c99 -Wall -Wconversion -Wtype-limits -pedantic -Werror -O0 -g src/*.c pruebas_chanutron.c -o pruebas_chanutron
+valgrind --leak-check=full --track-origins=yes --show-reachable=yes --error-exitcode=2 --show-leak-kinds=all --trace-children=yes ./pruebas_chanutron
+==6388== Memcheck, a memory error detector
+==6388== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==6388== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==6388== Command: ./pruebas_chanutron
+==6388== 
+[33;1m
+------------ PRUEBAS DEL TP1 ------------
+=========================================[37;1m
+[33;1m
+CREAR UN JUEGO
+==============[37;1m
+[32;1m✓ [37;1mjuego_crear devuelve un juego no nulo
+[32;1m✓ [37;1mEl listado de pokemones es vacío
+[32;1m✓ [37;1mEl puntaje del jugador 1 es 0
+[32;1m✓ [37;1mEl puntaje del jugador 2 es 0
+[32;1m✓ [37;1mEl juego no está finalizado
+[33;1m
+CARGAR POKEMON
+==============[37;1m
+[32;1m✓ [37;1mCargar un archivo inexistente resulta en ERROR_GENERAL
+[32;1m✓ [37;1mEl listado de pokemones es vacío
+[32;1m✓ [37;1mCargar un archivo con menos pokemon que los necesarios resulta en ERROR_GENERAL
+[32;1m✓ [37;1mEl listado de pokemones es vacío
+[32;1m✓ [37;1mCargar un archivo existente resulta en TODO_OK
+[32;1m✓ [37;1mEl listado de pokemones tiene el tamaño correcto
+[33;1m
+SELECCION DE POKEMON
+====================[37;1m
+[32;1m✓ [37;1mCargar un archivo existente resulta en TODO_OK
+[32;1m✓ [37;1mEl listado de pokemones tiene el tamaño correcto
+[32;1m✓ [37;1mUn jugador no puede seleccionar pokemon repetidos
+[32;1m✓ [37;1mUn jugador no puede seleccionar pokemon inexistente
+[32;1m✓ [37;1mUn jugador puede seleccionar 3 pokemon diferentes
+[32;1m✓ [37;1mEs valido que el ambos jugadores repitan pokemones entre si
+[33;1m
+JUGAR
+=====[37;1m
+[32;1m✓ [37;1mCargar un archivo existente resulta en TODO_OK
+[32;1m✓ [37;1mEl listado de pokemones tiene el tamaño correcto
+[32;1m✓ [37;1mLos pokemon del jugador 1 se pueden seleccionar sin problema
+[32;1m✓ [37;1mLos pokemon del jugador 2 se pueden seleccionar sin problema
+[32;1m✓ [37;1mRealizar una jugada inválida con ambos jugadores devuelve ATAQUE_ERROR
+[32;1m✓ [37;1mRealizar una jugada inválida con el primer jugador devuelve ATAQUE_ERROR para el jugador
+[32;1m✓ [37;1mRealizar una jugada inválida con el segundo jugador devuelve ATAQUE_ERROR para el segundo jugador
+------------------------------------------------------------------------------------------------------------------
+Puntaje del jugador 1: 1
+Ataques usados por el jugador 1:
+Latigo | 
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+Puntaje del jugador 2: 2
+Ataques usados por el jugador 2:
+Retribucion | 
+------------------------------------------------------------------------------------------------------------------
+[32;1m✓ [37;1mRealizar una jugada valida de tipo normal devuelve ATAQUE_REGULAR
+[32;1m✓ [37;1mNo se puede volver a utilizar el mismo ataque/pokemon dos veces
+[32;1m✓ [37;1mEl puntaje del jugador 1 es 1
+[32;1m✓ [37;1mEl puntaje del jugador 2 es 2
+------------------------------------------------------------------------------------------------------------------
+Puntaje del jugador 1: 4
+Ataques usados por el jugador 1:
+Latigo | Chispa | 
+------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
+Puntaje del jugador 2: 4
+Ataques usados por el jugador 2:
+Retribucion | Buceo | 
+------------------------------------------------------------------------------------------------------------------
+[32;1m✓ [37;1mRealizar una jugada valida de tipo ELECTRICO contra un pokemon AGUA resulta en ataque efectivo
+[32;1m✓ [37;1mRealizar una jugada valida de tipo AGUA contra un pokemon ELECTRICO resulta en ataque inefectivo
+[32;1m✓ [37;1mEl puntaje del jugador 1 es 4 (1 + 1*3)
+[32;1m✓ [37;1mEl puntaje del jugador 2 es 4 (2 + 3/2 redondeando hacia arriba)
+[32;1m✓ [37;1mEl juego no está finalizado
+[31;1m✗ [37;1mRealizar una jugada valida de tipo FUEGO contra un pokemon PLANTA resulta en ataque efectivo
+[31;1m✗ [37;1mRealizar una jugada valida de tipo PLANTA contra un pokemon FUEGO resulta en ataque inefectivo
+[31;1m✗ [37;1mEl puntaje del jugador 1 es 16 (4 + 4*3)
+[31;1m✗ [37;1mEl puntaje del jugador 2 es 5 (4 + 2/2 redondeando hacia arriba)
+[32;1m✓ [37;1mEl juego no está finalizado
+
+---------------------------------
+38 pruebas corridas, 4 errores - D:
+[0m==6388== 
+==6388== HEAP SUMMARY:
+==6388==     in use at exit: 0 bytes in 0 blocks
+==6388==   total heap usage: 205 allocs, 205 frees, 32,316 bytes allocated
+==6388== 
+==6388== All heap blocks were freed -- no leaks are possible
+==6388== 
+==6388== For lists of detected and suppressed errors, rerun with: -s
+==6388== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+make: *** [makefile:8: valgrind-chanutron] Error 4
